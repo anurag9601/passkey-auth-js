@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>login</title>
+  </head>
+  <body>
+    <div>
+      <form id="login-form">
+        <input type="email" id="email" placeholder="email" />
+        <button type="submit">login</button>
+      </form>
+      <div id="login-user">
+        <h1 id="Send-email">Email: </h1>
+        <h2 id="password">Password: </h2>
+        <p id="status">Verified: </p>
+      </div>
+    </div>
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+    <script>
+      const { startAuthentication } = SimpleWebAuthnBrowser;
+      let user = null;
+
+      if (!user) {
+        document.getElementById("login-user").style.display = "none";
+      }
+
+      const form = document.getElementById("login-form");
+      const email = document.getElementById("email");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const res = await fetch("/login-register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email.value,
+          }),
+        });
+
+        res.json().then(async (e) => {
+          const challenge = await startAuthentication(e.options);
+
+          const res = await fetch("/login-register-verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: email.value,
+              cred: challenge,
+            }),
+          });
+
+          res.json().then((e) => {
+            if (e.data) {
+              user = e;
+              document.getElementById("login-user").style.display = "block";
+              document.getElementById("Send-email").innerHTML += e.data.email;
+              document.getElementById("password").innerHTML += e.data.password;
+              document.getElementById("status").innerHTML += e.verified;
+            } else {
+              console.log(e);
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
